@@ -6,8 +6,6 @@ import android.widget.TextView;
 
 import centrifuge.Centrifuge;
 import centrifuge.Client;
-//import centrifuge.Credentials;
-import centrifuge.EventHub;
 import centrifuge.DisconnectHandler;
 import centrifuge.ConnectHandler;
 import centrifuge.PublishHandler;
@@ -22,24 +20,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         TextView tv = (TextView) findViewById(R.id.text);
 
-//        Credentials creds = Centrifuge.newCredentials(
-//                "42", "1488055494", "",
-//                "24d0aa4d7c679e45e151d268044723d07211c6a9465d0e35ee35303d13c5eeff"
-//        );
-
-        EventHub events = Centrifuge.newEventHub();
         ConnectHandler connectHandler = new AppConnectHandler(this);
         DisconnectHandler disconnectHandler = new AppDisconnectHandler(this);
 
-        events.onConnect(connectHandler);
-        events.onDisconnect(disconnectHandler);
-
         Client client = Centrifuge.new_(
-                "ws://192.168.1.34:8000/connection/websocket",
-                events,
+                "ws://192.168.1.35:8000/connection/websocket",
                 Centrifuge.defaultConfig()
         );
-//        client.setCredentials(creds);
+//        client.setToken("???");
+
+        client.onConnect(connectHandler);
+        client.onDisconnect(disconnectHandler);
 
         try {
             client.connect();
@@ -49,14 +40,22 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        SubscriptionEventHub subEvents = Centrifuge.newSubscriptionEventHub();
-        PublishHandler publishHandler = new AppPublishHandler(this);
-        subEvents.onPublish(publishHandler);
-
+        Subscription sub;
         try {
-            Subscription sub = client.subscribe("chat:index", subEvents);
+            sub = client.newSubscription("chat:index");
         } catch (Exception e) {
             e.printStackTrace();
+            return;
+        }
+
+        PublishHandler publishHandler = new AppPublishHandler(this);
+        sub.onPublish(publishHandler);
+
+        try {
+            sub.subscribe();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
     }
 }
